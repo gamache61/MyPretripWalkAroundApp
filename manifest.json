@@ -2,22 +2,13 @@
   "name": "Pre-Trip Walkaround",
   "short_name": "Pre-Trip",
   "description": "3D pre-trip inspection practice for truck drivers: open the hood, walk around a tractor and 53 ft van, check 39 items and find the hidden defects.",
-  "id": "./",
+  "id": "/MyPretripWalkAroundApp/",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "display_override": [
-    "fullscreen",
-    "standalone"
-  ],
   "orientation": "landscape",
   "background_color": "#0e1317",
   "theme_color": "#0e1317",
-  "categories": [
-    "education",
-    "simulation",
-    "games"
-  ],
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -28,12 +19,6 @@
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon-1024.png",
-      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any"
     },
@@ -59,5 +44,14 @@
       "form_factor": "wide",
       "label": "Choose practice or a timed 7-minute inspection"
     }
+  ],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "categories": [
+    "education",
+    "simulation",
+    "games"
   ]
 }

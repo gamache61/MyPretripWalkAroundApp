@@ -1,54 +1,58 @@
-// Service worker: keeps the app and everything it loads (Three.js, fonts) so it runs offline.
-// Change VERSION every time you upload a new index.html, so players get the update.
-const VERSION = 'pretrip-v3';
-
+// Gamache Apps service worker: lets the app install and run offline.
+// Change VERSION whenever you upload new files so everyone gets the update.
+const VERSION = 'pretrip-v10';
 const FILES = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/icon-1024.png',
-  './icons/icon-maskable-512.png',
-  'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
-  'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js',
-  'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap'
+  "./",
+  "./index.html",
+  "./manifest.json",
+  "./icons/icon-1024.png",
+  "./icons/icon-maskable-512.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(VERSION)
-      .then(c => Promise.all(FILES.map(u => c.add(new Request(u, { mode: u.startsWith('http') ? 'no-cors' : 'same-origin' })).catch(() => {}))))
-      .then(() => self.skipWaiting())
+
+self.addEventListener('install', event => {
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(VERSION).then(cache =>
+      Promise.allSettled(FILES.map(f => cache.add(f)))
+    )
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
+self.addEventListener('activate', event => {
+  event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
-  const req = e.request;
+self.addEventListener('fetch', event => {
+  const req = event.request;
   if (req.method !== 'GET') return;
 
-  // The app page: try the network first (so updates show up), fall back to the saved copy offline
+  // Pages: get the newest copy when online, use the saved copy when offline.
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req)
-        .then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put('./index.html', copy)); return r; })
-        .catch(() => caches.match('./index.html'))
+    event.respondWith(
+      fetch(req).then(res => {
+        if (res && res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
+        return res;
+      }).catch(() =>
+        caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match('./index.html'))
+      )
     );
     return;
   }
 
-  // Everything else (Three.js, fonts, icons): use the saved copy, fetch and save it if missing
-  e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(r => {
-      if (r && (r.ok || r.type === 'opaque')) { const copy = r.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
-      return r;
-    }))
+  // Everything else: use the saved copy right away and refresh it in the background.
+  event.respondWith(
+    caches.match(req, { ignoreSearch: true }).then(hit => {
+      const net = fetch(req).then(res => {
+        if (res && (res.ok || res.type === 'opaque')) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
+        return res;
+      }).catch(() => hit);
+      return hit || net;
+    })
   );
 });
